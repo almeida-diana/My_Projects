@@ -13,6 +13,7 @@ Tools Used :-
   - Twitter API
   - SAP Lumira
 
+
 2. ANIMATED VISUALIZATION USING POWER BI:
 
 Purpose of this exercise is to perform data cleaning and formatting of csv file in Python.  
@@ -21,6 +22,7 @@ Finally, I prepared an animated visualization in Power BI to display population 
 Tools Used :-
   - python 3.6 (Jupyter Notebook)
   - Power BI
+
 
 3. WEB SCRAPING USING BEAUTIFUL SOUP TOOLKIT:
 
