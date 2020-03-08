@@ -1,0 +1,850 @@
+---
+title: "BUAN6356- Project" - GROUP 3 - Telco Customer Churn
+                          Focused customer retention programs
+output: html_document
+---
+Installing the required packages
+
+```{r}
+# install.packages("tree")
+# install.packages("caTools")
+# install.packages("randomForest")
+# install.packages("e1071")
+# install.packages("lubridate")
+# install.packages("MASS")
+# install.packages("caret")
+# install.packages("e1071")
+# install.packages("lubridate")
+install.packages("pls")
+# install.packages("dplyr")
+ install.packages("gridExtra")
+```
+
+# libraries 
+```{r}
+library(tidyverse)
+library(modelr)
+library(lubridate) # for date and time
+library(caTools)   # for splitting the dataset
+library(class)
+library(MASS)
+library(tree)
+library(ISLR)
+require(tree)
+library(randomForest)
+library(caret)   # for support vector machine
+library(dplyr)
+library(gridExtra)
+library(ROCR)
+
+# getting the current directory
+getwd() 
+
+# importing the dataset
+teleco <-  read.csv("Telco-Customer.csv") 
+names(teleco)
+head(teleco)
+
+```
+
+# Finding the unique values for each of the predictors
+
+```{r}
+unique(teleco$gender) 
+# Levels: Female Male
+unique(teleco$SeniorCitizen)
+# Levels: 0 1
+unique(teleco$Partner)
+# Levels: No Yes
+unique(teleco$Dependents)
+# Levels: Female Male
+unique(teleco$PhoneService)
+# Levels: No Yes
+unique(teleco$MultipleLines)
+# Levels: No, No phone service, Yes
+unique(teleco$InternetService)
+# Levels: DSL Fiber optic No
+unique(teleco$OnlineSecurity)
+#Levels: No ,No internet service, Yes
+unique(teleco$OnlineBackup)
+#Levels: No No internet service Yes
+unique(teleco$DeviceProtection)
+# Levels: No, No internet service ,Yes
+unique(teleco$TechSupport)
+# Levels: No, No internet service, Yes
+unique(teleco$StreamingTV)
+# Levels: No, No internet service ,Yes
+unique(teleco$StreamingMovies)
+# Levels: No, No internet service ,Yes
+unique(teleco$Contract)
+# Levels: Month-to-month, One year, Two year
+unique(teleco$PaperlessBilling)
+# Levels: No Yes
+unique(teleco$PaymentMethod)
+# Levels: Bank transfer (automatic), Credit card (automatic) ,Electronic check, Mailed check
+
+```
+
+# Checking whether the variable is having null values and getting the count
+
+```{r}
+sum(is.na(teleco$gender)) # 0
+sum(is.na(teleco$SeniorCitizen)) # 0
+sum(is.na(teleco$Partner)) # 0
+sum(is.na(teleco$Dependents)) # 0
+sum(is.na(teleco$PhoneService)) # 0
+sum(is.na(teleco$MultipleLines)) # 0
+sum(is.na(teleco$InternetService)) # 0
+sum(is.na(teleco$OnlineSecurity)) # 0
+sum(is.na(teleco$OnlineBackup))  # 0
+sum(is.na(teleco$DeviceProtection)) # 0
+sum(is.na(teleco$TechSupport)) # 0
+sum(is.na(teleco$StreamingTV)) # 0
+sum(is.na(teleco$StreamingMovies)) # 0
+sum(is.na(teleco$Contract)) # 0
+sum(is.na(teleco$PaperlessBilling)) # 0
+sum(is.na(teleco$PaymentMethod)) # 0
+sum(is.na(teleco$TotalCharges)) # 11
+
+```
+
+
+# As the total charges is having 11 N/A values we are replacing it with the mean value of the totalcharges.
+
+```{r}
+# checking the row number with NA values in TotalCharges column
+which(is.na(teleco$TotalCharges))
+# 489  754  937 1083 1341 3332 3827 4381 5219 6671 6755
+
+# omitting the rows with NA values in Totalcharges column
+telco_na_rm <- na.omit(teleco, cols = "TotalCharges")
+
+# Finding  the mean of the column                                
+telco_tchg_mean <- mean(telco_na_rm$TotalCharges)
+
+# replacing the NA values in Total charges column with the mean value
+teleco$TotalCharges[c(489,754,937,1083,1341,3332,3827,4381,5219,6671,6755)] <-  telco_tchg_mean
+
+```
+
+
+```{r}
+# Plots
+# Plotting the first 4 predictors against churn and checking if it conveys any 
+# relationship with churn
+
+plot1 <- ggplot(data = teleco, aes(x = teleco$gender, fill = teleco$Churn)) +
+         geom_bar(position = "fill") +
+         theme_bw() +
+  labs( x= "Gender", y =" Churn")
+
+plot2 <- ggplot(data = teleco, aes(x = teleco$SeniorCitizen, fill = teleco$Churn)) +
+         geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Senior Citizen", y =" Churn")
+
+plot3 <- ggplot(data = teleco, aes(x =teleco$Partner, fill = teleco$Churn)) +
+         geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Partner", y =" Churn")
+
+plot4 <- ggplot(data = teleco, aes(x = teleco$Dependents, fill = teleco$Churn)) +
+         geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Dependents", y =" Churn")
+
+grid.arrange(plot1, plot2, plot3, plot4, ncol=2)
+
+# Next 4 predictors.
+plot5 <- ggplot(data = teleco, aes(x = teleco$PhoneService, fill = teleco$Churn)) +
+         geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Phone Service", y =" Churn")
+
+plot6 <- ggplot(data = teleco, aes(x = teleco$MultipleLines, fill = teleco$Churn)) +
+         geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Multiple Lines", y =" Churn")
+
+plot7 <- ggplot(data = teleco, aes(x = teleco$InternetService, fill = teleco$Churn)) +
+         geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Internet Services", y =" Churn")
+
+plot8 <- ggplot(data = teleco, aes(x = teleco$OnlineSecurity, fill = teleco$Churn)) +
+         geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Online Security", y =" Churn")
+
+grid.arrange(plot5, plot6, plot7, plot8, ncol=2)
+# Next 4 predictors.
+
+plot9 <- ggplot(data = teleco, aes(x = teleco$OnlineBackup, fill = teleco$Churn)) +
+         geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Online Backup", y =" Churn")
+
+plot10 <- ggplot(data = teleco, aes(x = teleco$DeviceProtection, fill = teleco$Churn))+
+          geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Device Protection", y =" Churn")
+
+plot11 <- ggplot(data = teleco, aes(x = teleco$TechSupport, fill = teleco$Churn)) +
+          geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Tech Support", y =" Churn")
+
+plot12 <- ggplot(data = teleco, aes(x = teleco$StreamingTV, fill = teleco$Churn)) +
+          geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Streaming TV", y =" Churn")
+
+grid.arrange(plot9, plot10, plot11, plot12, ncol=2)
+
+# Next 4 predictors.
+plot13 <- ggplot(data = teleco, aes(x = teleco$StreamingMovies, fill = teleco$Churn))+
+          geom_bar(position = "fill") +
+         theme_bw()+
+  labs( x= "Streaming Movies", y =" Churn")
+
+plot14 <- ggplot(data = teleco, aes(x = teleco$Contract, fill = teleco$Churn)) +
+          geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Contract", y =" Churn")
+
+plot15 <- ggplot(data = teleco, aes(x = teleco$PaperlessBilling, fill = teleco$Churn))+
+          geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Paperless Billing", y =" Churn")
+
+plot16 <- ggplot(data = teleco, aes(x = teleco$PaymentMethod, fill = teleco$Churn)) +
+          geom_bar(position = "fill")+
+         theme_bw()+
+  labs( x= "Payment Method", y =" Churn")
+
+grid.arrange(plot13, plot14, plot15, plot16, ncol=2)
+
+plot17 <- ggplot(data = teleco, aes(x = teleco$MonthlyCharges, fill = teleco$Churn)) +
+   geom_bar()+
+         theme_bw() +
+  labs( x= "Monthly Charges", y =" Churn")
+
+plot18<- ggplot(data = teleco, aes(x = teleco$TotalCharges, fill = teleco$Churn)) +
+  geom_histogram(position = "fill", binwidth= 10)+
+         theme_bw()+
+  labs( x= "Total Charges", y =" Churn")
+
+# The graphs and plots do not convey much information or relation with churn.
+# Hence, the exploratory data analysis is not sufficient to predict that
+# the customer will churn because of what reasons (predictors). 
+#THe patterns displayed by the plots are insufficient to make analysis to 
+#determine churn. Hence we proceed to next method of analysis. 
+
+```
+# Converting into dummy variables
+
+```{r}
+for(level in unique(teleco$gender)){
+  teleco[paste("Gender", level, sep = "_")] <- ifelse(teleco$gender == level, 1, 0)
+}
+
+for(level in unique(teleco$SeniorCitizen)){
+  teleco[paste("SeniorCitizen", level, sep = "_")] <- ifelse(teleco$SeniorCitizen == level, 1, 0)
+}
+
+for(level in unique(teleco$Partner)){
+  teleco[paste("Partner", level, sep = "_")] <- ifelse(teleco$Partner == level, 1, 0)
+}
+
+
+for(level in unique(teleco$Dependents)){
+  teleco[paste("Dependents", level, sep = "_")] <- ifelse(teleco$Dependents == level, 1, 0)
+}
+
+for(level in unique(teleco$PhoneService)){
+  teleco[paste("PhoneService", level, sep = "_")] <- ifelse(teleco$PhoneService == level, 1, 0)
+}
+
+
+for(level in unique(teleco$MultipleLines)){
+  teleco[paste("MultipleLines", level, sep = "_")] <- ifelse(teleco$MultipleLines == level, 1, 0)
+}
+
+
+for(level in unique(teleco$InternetService)){
+  teleco[paste("InternetService", level, sep = "_")] <- ifelse(teleco$InternetService == level, 1, 0)
+}
+
+
+for(level in unique(teleco$OnlineSecurity)){
+  teleco[paste("OnlineSecurity", level, sep = "_")] <- ifelse(teleco$OnlineSecurity == level, 1, 0)
+}
+
+
+for(level in unique(teleco$OnlineBackup)){
+  teleco[paste("Online_Backup", level, sep = "_")] <- ifelse(teleco$OnlineBackup == level, 1, 0)
+}
+
+
+for(level in unique(teleco$DeviceProtection)){
+  teleco[paste("DeviceProtection", level, sep = "_")] <- ifelse(teleco$DeviceProtection == level, 1, 0)
+}
+
+for(level in unique(teleco$TechSupport)){
+  teleco[paste("TechSupport", level, sep = "_")] <- ifelse(teleco$TechSupport == level, 1, 0)
+}
+
+for(level in unique(teleco$StreamingTV)){
+  teleco[paste("tv", level, sep = "_")] <- ifelse(teleco$StreamingTV == level, 1, 0)
+}
+
+for(level in unique(teleco$StreamingMovies)){
+  teleco[paste("Movies", level, sep = "_")] <- ifelse(teleco$StreamingMovies == level, 1, 0)
+}
+
+
+for(level in unique(teleco$Contract)){
+  teleco[paste("Contract", level, sep = "_")] <- ifelse(teleco$Contract == level, 1, 0)
+}
+
+for(level in unique(teleco$PaperlessBilling)){
+  teleco[paste("PaperLessBilling", level, sep = "_")] <- ifelse(teleco$PaperlessBilling == level, 1, 0)
+}
+
+for(level in unique(teleco$PaymentMethod)){
+  teleco[paste("PaymentMethod", level, sep = "_")] <- ifelse(teleco$PaymentMethod == level, 1, 0)
+}
+
+```
+ 
+ # Deleting original categorical variables
+
+```{r}
+teleco_new <- teleco
+teleco_new['gender'] <- NULL
+teleco_new['SeniorCitizen'] <- NULL
+teleco_new['Partner'] <- NULL
+teleco_new['Dependents'] <- NULL
+teleco_new['PhoneService'] <- NULL
+teleco_new['MultipleLines'] <- NULL
+teleco_new['InternetService'] <- NULL
+teleco_new['OnlineSecurity'] <- NULL
+teleco_new['OnlineBackup'] <- NULL
+teleco_new['DeviceProtection'] <- NULL
+teleco_new['TechSupport'] <- NULL
+teleco_new['StreamingTV'] <- NULL
+teleco_new['StreamingMovies'] <- NULL
+teleco_new['Contract'] <- NULL
+teleco_new['PaperlessBilling'] <- NULL
+teleco_new['PaymentMethod'] <- NULL
+
+```
+
+## Splitting the data into training and testing data
+
+```{r}
+split_factor <- sample.split(teleco_new,SplitRatio = 0.8) # to split the dataset into test and training dataset by
+                                                          # a ratio of 0.8 that is 80% training and 20% testing
+
+teleco_train <- subset(teleco_new, split_factor == 'TRUE') # assigning the data which is having the split_factor = TRUE 
+                                                           # from the Data1 dataset to a training dataset
+teleco_test  <- subset(teleco_new,split_factor == 'FALSE') # assigning the data which is having the split_factor = FALSE  
+                                                           # from the Data1 dataset to a training dataset
+```
+teleco_train
+Removing the customerID column from both training and testing data set
+
+```{r}
+colnames(teleco)
+
+teleco_train_1 <- teleco_train
+teleco_train_1['customerID'] <- NULL
+
+teleco_test_1 <- teleco_test
+teleco_test_1['customerID'] <- NULL
+```
+
+# Model -1 - Logistic Regression model with threshold value 0.5
+
+```{r}
+
+model1<-glm(Churn~ .,family=binomial,data = teleco_train_1)
+summary(model1)
+teleco_test_1$probability<-predict(model1,teleco_test_1,type='response')
+teleco_test_1$pred<-'No'
+teleco_test_1$pred[teleco_test_1$probability>0.5]<-'Yes'
+
+# Confusion matrix
+Confusion_model1 <- with(teleco_test_1,table(pred,Churn))
+with(teleco_test_1, mean(pred==Churn))
+
+# write.csv(MyData, file = "MyData.csv")
+
+# storing the confusion matrix into a table
+Logistics_table1 <- data.frame(Confusion_model1)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+Logistics_table1 <- Logistics_table1 %>% mutate(ads = ifelse(pred == 'No', 0, Freq))
+Logistics_table1 <- Logistics_table1 %>% 
+                    mutate(Loss = ifelse(Churn == 'Yes', ifelse(pred == 'No',Freq*3,0),0))
+Logistics_table1 <- Logistics_table1 %>% mutate(Total = Loss+ads)
+
+#ROC
+# pred <- predict(model1, teleco_train_1,type = 'prob') 
+# predROC<- prediction(pred, teleco_train_1$Churn)
+# roc <- performance(predroc, "tpr","fpr") #true positive rate
+# plot(roc,colorize=T, main="ROC curve", ylab="Sensitivity" , xlab = "Accuracy" )
+# #AUC
+# #auc = performance(predroc, "auc")
+# abline(a=0,b=1)
+```
+
+Logistic Regression model with threshold value 0.6
+
+```{r}
+teleco_test_1$pred<-'No'
+teleco_test_1$pred[teleco_test_1$probability>0.6]<-'Yes'
+
+# Confusion matrix
+Confusion_model2 <- with(teleco_test_1,table(pred,Churn))
+with(teleco_test_1,mean(pred==Churn))
+
+# storing the confusion matrix into a table
+Logistics_table2 <- data.frame(Confusion_model2)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+Logistics_table2 <- Logistics_table2 %>% mutate(ads = ifelse(pred == 'No', 0, Freq))
+Logistics_table2 <- Logistics_table2 %>% 
+                     mutate(Loss = ifelse(Churn == 'Yes', ifelse(pred == 'No',Freq*3,0),0))
+Logistics_table2 <- Logistics_table2 %>% mutate(Total = Loss+ads)
+
+```
+
+Logistic Regression model with threshold value 0.7
+
+```{r}
+teleco_test_1$pred<-'No'
+teleco_test_1$pred[teleco_test_1$probability>0.7]<-'Yes'
+
+# Confusion matrix
+Confusion_model3 <- with(teleco_test_1,table(pred,Churn))
+with(teleco_test_1,mean(pred==Churn))
+
+# storing the confusion matrix into a table
+Logistics_table3 <- data.frame(Confusion_model3)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+Logistics_table3 <- Logistics_table3 %>% mutate(ads = ifelse(pred == 'No', 0, Freq))
+Logistics_table3 <- Logistics_table3 %>% 
+                     mutate(Loss = ifelse(Churn == 'Yes', ifelse(pred == 'No',Freq*3,0),0))
+Logistics_table3 <- Logistics_table3 %>% mutate(Total = Loss+ads)
+
+```
+
+Logistic Regression model with threshold value 0.8
+
+```{r}
+teleco_test_1$pred<-'No'
+teleco_test_1$pred[teleco_test_1$probability>0.8]<-'Yes'
+
+# Confusion matrix
+Confusion_model4 <- with(teleco_test_1,table(pred,Churn))
+with(teleco_test_1,mean(pred==Churn))
+
+# storing the confusion matrix into a table
+Logistics_table4 <- data.frame(Confusion_model4)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+Logistics_table4 <- Logistics_table4 %>% mutate(ads = ifelse(pred == 'No', 0, Freq))
+Logistics_table4 <- Logistics_table4 %>% 
+                     mutate(Loss = ifelse(Churn == 'Yes', ifelse(pred == 'No',Freq*3,0),0))
+Logistics_table4 <- Logistics_table4 %>% mutate(Total = Loss+ads)
+
+```
+
+Logistic Regression model with threshold value 0.4
+
+```{r}
+teleco_test_1$pred<-'No'
+teleco_test_1$pred[teleco_test_1$probability>0.4]<-'Yes'
+
+# Confusion matrix
+Confusion_model5 <- with(teleco_test_1,table(pred,Churn))
+with(teleco_test_1,mean(pred==Churn))
+
+# storing the confusion matrix into a table
+Logistics_table5 <- data.frame(Confusion_model5)
+# to check the columns in the data frame
+names(Logistics_table5)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+Logistics_table5 <- Logistics_table5 %>% mutate(ads = ifelse(pred == 'No', 0, Freq))
+Logistics_table5 <- Logistics_table5 %>% 
+                     mutate(Loss = ifelse(Churn == 'Yes', ifelse(pred == 'No',Freq*3,0),0))
+Logistics_table5 <- Logistics_table5 %>% mutate(Total = Loss+ads)
+
+```
+
+ Model - 2 - Linear Discriminant Analysis Model (LDA)
+
+```{r}
+# Deleting the customerID column in both training and testing dataset
+teleco_train_2 <- teleco_train
+teleco_train_2['customerID'] <- NULL
+
+teleco_test_2 <- teleco_test
+teleco_test_2['customerID'] <- NULL
+
+# fit the LDA model
+model2 <- lda(Churn~.,data=teleco_train_2)
+summary(model2)
+model2$prior
+# predictions
+lda_predict = predict(model2,teleco_test_2)
+lda_classify <- lda_predict$class
+# a confusion matrix for the original and the predicted value is made
+lda_output <- table(lda_classify,teleco_test_1$Churn)
+# correct classification percentage
+mean(lda_classify == teleco_test_2$Churn)
+# musclassification error
+mean(lda_classify != teleco_test_2$Churn )
+
+# to create a table for the lds confusion matrix
+lda_table <- data.frame(lda_output)
+names(lda_table)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+lda_table <- lda_table %>% mutate(ads = ifelse(lda_classify == 'No', 0, Freq))
+lda_table <- lda_table %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(lda_classify == 'No',Freq*3,0),0))
+lda_table <- lda_table %>% mutate(Total = Loss+ads)
+lda_table
+```
+ 
+Removing the dummy variables with the NA values in the training dataset
+
+```{r}
+
+teleco_train_3 <- teleco_train
+
+
+
+teleco_train_3['Gender_Male'] <- NULL
+teleco_train_3['SeniorCitizen_1'] <- NULL
+teleco_train_3['Partner_No'] <- NULL
+teleco_train_3['Dependents_Yes'] <- NULL
+teleco_train_3['PhoneService_Yes'] <- NULL
+teleco_train_3['MultipleLines_Nophoneservice'] <- NULL
+teleco_train_3['MultipleLines_Yes'] <- NULL
+teleco_train_3['InternetService_No'] <- NULL
+teleco_train_3['OnlineSecurity_Yes'] <- NULL
+teleco_train_3['OnlineSecurity_Nointernetservice'] <- NULL
+teleco_train_3['Online_Backup_No'] <- NULL
+teleco_train_3['Online_Backup_Nointernetservice'] <- NULL
+teleco_train_3['DeviceProtection_Yes'] <- NULL                             
+teleco_train_3['DeviceProtection_Nointernetservice'] <- NULL             
+teleco_train_3['TechSupport_Yes'] <- NULL                                       
+teleco_train_3['TechSupport_Nointernetservice'] <- NULL                    
+teleco_train_3['tv_Yes'] <- NULL                                               
+teleco_train_3['tv_Nointernetservice'] <- NULL                              
+teleco_train_3['Movies_Yes'] <- NULL                                          
+teleco_train_3['Movies_Nointernetservice'] <- NULL                       
+teleco_train_3['Contract_Twoyear'] <- NULL                                   
+teleco_train_3['PaperLessBilling_No'] <- NULL                                 
+teleco_train_3['PaymentMethod_Creditcard_automatic'] <- NULL
+teleco_train_nv3 <- teleco_train_3
+teleco_train_3['customerID'] <- NULL
+
+# Removing the dummy variables with the NA values in testing dataset
+
+# ```{r}
+teleco_test_3 <- teleco_test
+
+
+teleco_test_3['Gender_Male'] <- NULL
+teleco_test_3['SeniorCitizen_1'] <- NULL
+teleco_test_3['Partner_No'] <- NULL
+teleco_test_3['Dependents_Yes'] <- NULL
+teleco_test_3['PhoneService_Yes'] <- NULL
+teleco_test_3['MultipleLines_Nophoneservice'] <- NULL
+teleco_test_3['MultipleLines_Yes'] <- NULL
+teleco_test_3['InternetService_No'] <- NULL
+teleco_test_3['OnlineSecurity_Yes'] <- NULL
+teleco_test_3['OnlineSecurity_Nointernetservice'] <- NULL
+teleco_test_3['Online_Backup_No'] <- NULL          
+teleco_test_3['Movies_Yes'] <- NULL                                          
+teleco_test_3['Movies_Nointernetservice'] <- NULL                       
+teleco_test_3['Online_Backup_Nointernetservice'] <- NULL
+teleco_test_3['DeviceProtection_Yes'] <- NULL                             
+teleco_test_3['DeviceProtection_Nointernetservice'] <- NULL             
+teleco_test_3['TechSupport_Yes'] <- NULL                                       
+teleco_test_3['TechSupport_Nointernetservice'] <- NULL                    
+teleco_test_3['tv_Yes'] <- NULL                                               
+teleco_test_3['tv_Nointernetservice'] <- NULL                    
+teleco_test_3['Contract_Twoyear'] <- NULL                                   
+teleco_test_3['PaperLessBilling_No'] <- NULL                                 
+teleco_test_3['PaymentMethod_Creditcard_automatic'] <- NULL
+teleco_test_nv3 <- teleco_test_3
+teleco_test_3['customerID'] <- NULL
+```
+
+ Model - 3 - Quadratic Discriminant Analysis model (QDA)
+
+```{r}
+
+# fit the QDA  model
+model3 <- qda(Churn~.,data=teleco_train_3)
+# predictions
+qda_predict <- predict(model3,teleco_test_3)
+qda_classify <- qda_predict$class
+# a confusion matrix for the original and the predicted value is made
+qda_output <- table(qda_classify,teleco_test_3$Churn)
+# correct classification percentage
+mean(qda_classify == teleco_test_3$Churn)
+# musclassification error
+mean(qda_classify != teleco_test_3$Churn)
+qda_table <- data.frame(qda_output)
+names(qda_table)
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+qda_table <- qda_table %>% mutate(ads = ifelse(qda_classify == 'No', 0, Freq))
+qda_table <- qda_table %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(qda_classify == 'No',Freq*3,0),0))
+qda_table <- qda_table %>% mutate(Total = Loss+ads)
+```
+
+ Model - 4 - KNN model
+
+```{r}
+
+teleco_train_4 <- teleco_train
+teleco_train_4['customerID'] <- NULL
+
+teleco_test_4 <- teleco_test
+teleco_test_4['customerID'] <- NULL
+
+knntrain=teleco_train_4[,-4]
+knntest=teleco_test_4[,-4]
+knnlabel=teleco_train_4[,4]
+dim(knntrain)
+dim(knntest)
+
+#knn.pred  No Yes
+#    No   860 210
+#    Yes  219 178
+# mean :
+# 0.707563
+
+maxK = 1:25
+accuracy = rep(x = 0, times = length(maxK))
+
+for(i in seq_along(maxK)) {
+  mgknn = knn(train = knntrain,
+                test = knntest, 
+                cl = knnlabel, 
+                k = maxK[i])
+  accuracy[i] = mean(teleco_test_4[,4]== mgknn)
+}
+
+{plot(accuracy, type = "b", col = "dodgerblue", cex = 1, pch = 10, 
+     xlab = "k, number of neighbors", ylab = "classification accuracy",
+     main = "Accuracy vs Neighbors")
+# add lines indicating k with best accuracy
+abline(v = which(accuracy == max(accuracy)), col = "darkorange", lwd = 1.5)
+# add line for max accuracy seen
+abline(h = max(accuracy), col = "grey", lty = 2)}
+
+
+# for k =1
+knn_pred =knn(knntrain,knntest,knnlabel,k=1)
+knntable1 <- table(knn_pred,teleco_test_4$Churn)
+knntable1 <- data.frame(knntable1)
+knn_mean1 <- mean(knn_pred==teleco_test_4$Churn)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+knntable1 <- knntable1 %>% mutate(ads = ifelse(knn_pred == 'No', 0, Freq))
+knntable1 <- knntable1 %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(knn_pred == 'No',Freq*3,0),0))
+knntable1 <- knntable1 %>% mutate(Total = Loss+ads)
+
+# for k =5
+knn.pred2 =knn(knntrain,knntest,knnlabel,k=5)
+knntable2 <- table(knn.pred2,teleco_test_4$Churn)
+knntable2 <- data.frame(knntable2)
+knn_mean2 <- mean(knn.pred2==teleco_test_4$Churn)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+knntable2 <- knntable2 %>% mutate(ads = ifelse(knn.pred2 == 'No', 0, Freq))
+knntable2 <- knntable2 %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(knn.pred2 == 'No',Freq*3,0),0))
+knntable2 <- knntable2 %>% mutate(Total = Loss+ads)
+
+# for k =10
+knn.pred3 =knn(knntrain,knntest,knnlabel,k=10)
+knntable3 <- table(knn.pred3,teleco_test_4$Churn)
+knntable3 <- data.frame(knntable3)
+knn_mean3 <- mean(knn.pred3==teleco_test_4$Churn)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+knntable3 <- knntable3 %>% mutate(ads = ifelse(knn.pred3 == 'No', 0, Freq))
+knntable3 <- knntable3 %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(knn.pred3 == 'No',Freq*3,0),0))
+knntable3 <- knntable3 %>% mutate(Total = Loss+ads)
+
+# for k =15
+knn.pred4 =knn(knntrain,knntest,knnlabel,k=15)
+knntable4 <- table(knn.pred4,teleco_test_4$Churn)
+knntable4 <- data.frame(knntable4)
+knn_mean4<- mean(knn.pred4==teleco_test_4$Churn)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+knntable4 <- knntable4 %>% mutate(ads = ifelse(knn.pred4 == 'No', 0, Freq))
+knntable4 <- knntable4 %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(knn.pred4 == 'No',Freq*3,0),0))
+knntable4 <- knntable4 %>% mutate(Total = Loss+ads)
+
+# for k =21
+knn.pred5 =knn(knntrain,knntest,knnlabel,k=21)
+knntable5 <- table(knn.pred5,teleco_test_4$Churn)
+knntable5 <- data.frame(knntable5)
+knn_mean5 <- mean(knn.pred5==teleco_test_4$Churn)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+knntable5 <- knntable5 %>% mutate(ads = ifelse(knn.pred5 == 'No', 0, Freq))
+knntable5 <- knntable5 %>% 
+             mutate(Loss = ifelse(Var2 == 'Yes', ifelse(knn.pred5 == 'No',Freq*3,0),0))
+knntable5 <- knntable5 %>% mutate(Total = Loss+ads)
+
+```
+
+Decision Tree
+
+```{r}
+teleco_train_5 <- teleco_train_3
+teleco_train_5 <- data.frame(teleco_train_5)
+
+teleco_test_5 <- teleco_test_3
+
+#Fitting the tree
+tree.teleco_train_5 = tree(Churn~., teleco_train_5)
+summary(tree.teleco_train_5)
+tree.teleco_train_5
+
+#plot the tree
+plot(tree.teleco_train_5)
+text(a1, pretty = 0)
+tree.teleco_train_5 # error correct
+
+#Pruning the tree
+set.seed(4)
+cv.teleco_train_5 = cv.tree(tree.teleco_train_5, FUN = prune.misclass)
+cv.teleco_train_5
+#.................................
+#plot the error rate as a function of both size and k; type "b" means both line and points
+par(mfrow=c(1,2))
+plot(cv.teleco_train_5$size, cv.teleco_train_5$dev, type = "b")
+plot(cv.teleco_train_5$k, cv.teleco_train_5$dev, type = "b")
+
+#Get the tree that gives the lowest error
+prune.teleco_train_5 = prune.misclass(tree.teleco_train_5, best = 4)
+plot(prune.teleco_train_5)
+text(prune.teleco_train_5, pretty = 0) # error correct
+prune.teleco_train_5
+
+#For predictions of the tree, we use predict function. You may want to separate the dataset into train and test for this
+tree.pred = predict(tree.teleco_train_5, teleco_test_5, type = "class")
+dstree_confusion_matrix <- confusionMatrix(table(tree.pred,teleco_test_5$Churn))
+dstree_table <- dstree_confusion_matrix$table 
+decision_table <- data.frame(dstree_table)
+#confusion matrix
+#tree.pred   No  Yes
+#      No  3880  882
+#      Yes  254  560
+
+#Now 79.62% of the test observations are correctly classi???ed, so not only has the pruning process
+#produced a more interpretable tree, but it has also improved the classi???cation accuracy.
+
+names(decision_table)
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+decision_table <- decision_table %>% mutate(ads = ifelse(tree.pred == 'No', 0, Freq))
+decision_table <- decision_table %>% 
+                  mutate(Loss = ifelse(Var2 == 'Yes', ifelse(tree.pred == 'No',Freq*3,0),0))
+decision_table <- decision_table %>% mutate(Total = Loss+ads)
+
+```
+
+Naive Bayes Model
+
+```{r}
+# Naive Bayes Theorem
+# install.packages("e1071")
+library(e1071)
+library(caret) 
+teleco_train_naive <- teleco_train_nv3
+teleco_train_naive['customerID'] <- NULL
+teleco_test_naive  <- teleco_test_nv3
+teleco_test_naive['customerID'] <- NULL
+
+class(teleco_train_naive)
+# Fitting model
+naive_model <- naiveBayes(Churn ~. , data = teleco_train_naive)
+summary(naive_model)
+#Predict Output 
+naive_prediction= predict(naive_model,teleco_test_naive)
+naive_confusion_matrix <- confusionMatrix(table(naive_prediction,teleco_test_naive$Churn))
+naive_table <- naive_confusion_matrix$table 
+naive_table1 <- data.frame(naive_table)
+names(naive_table1)
+teleco_test_nv3<- data.frame(teleco_test_nv3)
+write.csv(teleco_test_nv3, file = "nb.csv")
+
+naive_prediction<- data.frame(naive_prediction)
+write.csv(naive_prediction, file = "nbpred.csv")
+
+
+# calculating the advertisement cost and loss for the this model and adding it as the columns to be implementedin R shiny
+naive_table1 <- naive_table1 %>% mutate(ads = ifelse(naive_prediction == 'No', 0, Freq))
+naive_table1 <- naive_table1 %>% 
+                mutate(Loss = ifelse(Var2 == 'Yes', ifelse(naive_prediction == 'No',Freq*3,0),0))
+naive_table1 <- naive_table1 %>% mutate(Total = Loss+ads)
+```
+
+ Random Forest
+
+```{r}
+
+
+rfmodel <- randomForest(Churn~.,data = teleco_train_3,ntree=500)
+
+plot(rfmodel)
+summary(fit)
+predicted= predict(rfmodel,teleco_test)
+rf_confusion_matrix <- confusionMatrix(table(predicted,teleco_test_3$Churn))
+rf_table<-rf_confusion_matrix$table
+rf_table <- data.frame(rf_table)
+
+
+rf_table <- rf_table %>% mutate(ads = ifelse(predicted == 'No', 0, Freq))
+rf_table <- rf_table %>% 
+                mutate(Loss = ifelse(Var2 == 'Yes', ifelse(predicted == 'No',Freq*3,0),0))
+rf_table <- rf_table %>% mutate(Total = Loss+ads)
+
+```
+
+PCA
+
+```{r}
+library(pls)
+
+teleco_train_6<-teleco_train_3
+teleco_train_6$Churn = as.numeric(as.factor(teleco_train_6$Churn))
+pcr.fit=pcr(Churn~ tenure + MonthlyCharges+TotalCharges, data=teleco_train_6, scale=TRUE, validation="CV")
+summary(pcr.fit)
+
+validationplot(pcr.fit, val.type="MSEP")
+
+#To run the model again with the optimal number of components
+pcr.fit=pcr(Churn~., data=teleco_train_6, scale=TRUE, ncomp = 1)
+summary(pcr.fit)
+```
+
+Naive Bayes model with the churn prediction
+
+```{r}
+naive_final <- read.csv("naive_result.csv")
+
+```
