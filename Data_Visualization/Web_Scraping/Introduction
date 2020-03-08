@@ -1,3 +1,4 @@
 Web Scrapping is a technique of extracting information from websites using computer software or applications.
 The objective of this exercise is to develop skills for acquiring data using a Python technique. 
-Here, I have performed web scraping of a weather websites, formatted the data in CSV using python programming and visualized the insights using Excel
+Here, I have performed web scraping of a weather websites, formatted the data in CSV using python programming and 
+visualized the temperature of various cities in Texas using Excel.
