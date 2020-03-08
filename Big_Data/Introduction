@@ -1,0 +1,15 @@
+Accidents caused by large trucks remain one of the leading causes of injuries and deaths in the United States. 
+I will use truck fleet data to refine and analyse trucking movement in order to meet the organizational goal of better understanding risk. 
+The use case involves geographic data, vehicles, average mileage, gas consumption, events, risk factors, and other supporting information.
+Each truck has been equipped to with devices to log location and event data. 
+These events are streamed back to a datacentre where students will process the data and revise truck movements to increase safety.
+
+The objective is identifying dangerous commercial truck drivers nationwide and answering common business questions such as,
+Which truck has the highest risk factor based on geographic location and time?
+
+Methods used :-
+1. Application of Big Data - Hadoop
+2. Hadoop File Systems – HDFS
+3. Data Extraction, loading and transformation – ETL
+4. Reporting and Analytics with Hadoop, Tableau and Excel
+
