@@ -1,4 +1,4 @@
-1. Sentiment Analysis Using Twitter API:
+1. SENTIMENT ANALYSIS USING TWITTER API:
 
 Every day, Global Bike Inc. produces thousands of bikes. 
 Currently, the Shop Floor workers have to walk to the working stations, which are fixed to a certain place, in order to scan their products and to confirm that a new bike was completed. 
@@ -13,7 +13,7 @@ Tools Used :-
   - Twitter API
   - SAP Lumira
 
-2. Animated Visualization using Power BI:
+2. ANIMATED VISUALIZATION USING POWER BI:
 
 Purpose of this exercise is to perform data cleaning and formatting of csv file in Python.  
 Finally, I prepared an animated visualization in Power BI to display population change since 1800 for various places in the U.S.
@@ -22,7 +22,7 @@ Tools Used :-
   - python 3.6 (Jupyter Notebook)
   - Power BI
 
-3. Web Scraping:
+3. WEB SCRAPING USING BEAUTIFUL SOUP TOOLKIT:
 
 Web Scrapping is a technique of extracting information from websites using computer software or applications.
 The objective of this exercise is to develop skills for acquiring data using a Python technique. 
