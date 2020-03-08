@@ -1,0 +1,28 @@
+Zomato dataset -  The basic idea of analyzing the Zomato dataset is to get a fair idea about the factors affecting the establishment of different types of the restaurant at different places in the world.
+
+From all the Data available, we can bring out some neat insights such as, Which franchise has the highest number of Restaurants? or How many Restaurants are accepting online orders? or Which location has the highest number of Restaurants? And so on.
+
+Models / methods used :-
+
+Ridge Regression
+Lasso Regression
+Linear Regression
+KNN Regressor
+Linear SVM Regression
+Polynomial Regression
+Kernelized SVM Regression (Linear Kernel, RBF Kernel)
+PCA
+Bagging - Ridge, KNN
+Pasting - Linear SVR, LASSO
+Ada Boosting - Linear Regression, Linear SVR
+Gradient Boosting - Polynomial
+
+
+Tools used:-
+python 3.6
+Numpy
+Pandas
+Matplotlib
+Seaborn
+Data science
+Machine learning
